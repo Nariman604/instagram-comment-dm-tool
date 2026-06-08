@@ -1,0 +1,17 @@
+/* Additional styles - primary styling lives in dashboard.html */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d0d1a; }
+::-webkit-scrollbar-thumb { background: rgba(124,111,239,.35); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(124,111,239,.6); }
+
+.fade-in { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+code {
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  font-size: .9em;
+}
