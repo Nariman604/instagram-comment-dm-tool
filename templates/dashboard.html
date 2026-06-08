@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Comment-to-DM Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary:    #0d0d1a;
+      --bg-secondary:  #13132a;
+      --bg-card:       #1a1a35;
+      --bg-hover:      #22224a;
+      --accent:        #7c6fef;
+      --accent-light:  #a89cf5;
+      --accent-dark:   #5a50c4;
+      --accent-glow:   rgba(124,111,239,0.22);
+      --success:       #34d399;
+      --error:         #f87171;
+      --warning:       #fbbf24;
+      --text-primary:  #e8e8f0;
+      --text-secondary:#9090b0;
+      --text-muted:    #5a5a7a;
+      --border:        rgba(124,111,239,0.16);
+      --border-hover:  rgba(124,111,239,0.42);
+      --radius-sm:     8px;
+      --radius-md:     12px;
+      --radius-lg:     16px;
+      --shadow:        0 4px 24px rgba(0,0,0,0.45);
+      --shadow-glow:   0 0 32px rgba(124,111,239,0.13);
+    }
+
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; }
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    .sidebar { width: 240px; flex-shrink: 0; background: var(--bg-secondary); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-logo { padding: 22px 20px 18px; border-bottom: 1px solid var(--border); }
+    .logo-icon-wrap { width: 38px; height: 38px; background: linear-gradient(135deg, var(--accent), #c47ef7); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 10px; }
+    .sidebar-logo h1 { font-size: 14px; font-weight: 700; line-height: 1.3; }
+    .sidebar-logo p  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .sidebar-nav { padding: 16px 12px; flex: 1; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; padding: 0 8px; margin: 10px 0 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-secondary); transition: all .18s; border: 1px solid transparent; margin-bottom: 2px; user-select: none; }
+    .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .nav-item.active { background: var(--accent-glow); color: var(--accent-light); border-color: var(--border-hover); }
+    .nav-item .ni { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
+    .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--success); margin-right: 5px; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--bg-secondary); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .topbar-title { font-size: 18px; font-weight: 700; }
+    .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .content { flex: 1; overflow-y: auto; padding: 28px; }
+
+    .page { display: none; }
+    .page.active { display: block; animation: fadeUp .25s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; transition: border-color .2s; }
+    .card:hover { border-color: var(--border-hover); }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+    .card-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 7px; letter-spacing: .02em; }
+    .form-label span { color: var(--text-muted); font-weight: 400; }
+    .form-input, .form-textarea { width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit; font-size: 13.5px; padding: 10px 14px; outline: none; transition: border-color .18s, box-shadow .18s; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .form-textarea { resize: vertical; min-height: 88px; }
+    .form-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .18s; text-decoration: none; white-space: nowrap; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; box-shadow: 0 2px 12px var(--accent-glow); }
+    .btn-primary:hover { background: linear-gradient(135deg, var(--accent-light), var(--accent)); box-shadow: 0 4px 20px rgba(124,111,239,.38); transform: translateY(-1px); }
+    .btn-secondary { background: var(--bg-hover); color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-secondary:hover { color: var(--text-primary); border-color: var(--border-hover); }
+    .btn-danger { background: rgba(248,113,113,.1); color: var(--error); border: 1px solid rgba(248,113,113,.22); }
+    .btn-danger:hover { background: rgba(248,113,113,.2); }
+    .btn-ghost { background: transparent; color: var(--accent-light); border: 1px solid var(--border-hover); }
+    .btn-ghost:hover { background: var(--accent-glow); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+    .campaigns-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .campaigns-header h2 { font-size: 20px; font-weight: 700; }
+    .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+
+    .campaign-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color .2s, transform .2s, box-shadow .2s; display: flex; flex-direction: column; }
+    .campaign-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+    .campaign-thumb { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-secondary), var(--bg-hover)); flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 12px; overflow: hidden; }
+    .campaign-thumb img { width: 100%; height: 160px; object-fit: cover; }
+    .campaign-thumb .thumb-no-img { font-size: 34px; opacity: .35; }
+    .campaign-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+    .campaign-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .post-id-badge { font-size: 11.5px; color: var(--text-muted); font-family: monospace; background: var(--bg-secondary); padding: 3px 8px; border-radius: 4px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .status-active   { background: rgba(52,211,153,.14); color: var(--success); border: 1px solid rgba(52,211,153,.28); }
+    .status-inactive { background: rgba(90,90,122,.2);   color: var(--text-muted); border: 1px solid var(--border); }
+    .kw-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; min-height: 22px; }
+    .kw-chip { background: var(--accent-glow); color: var(--accent-light); border: 1px solid var(--border-hover); border-radius: 999px; padding: 2px 10px; font-size: 11.5px; font-weight: 500; }
+    .kw-empty { font-size: 11.5px; color: var(--text-muted); font-style: italic; }
+    .msg-previews { flex: 1; margin-bottom: 14px; }
+    .msg-line { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .msg-line strong { color: var(--text-muted); font-size: 10.5px; letter-spacing: .04em; }
+    .card-actions { display: flex; gap: 7px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+    .empty-state { text-align: center; padding: 64px 20px; color: var(--text-muted); grid-column: 1 / -1; }
+    .empty-state .e-icon { font-size: 52px; opacity: .38; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; margin-bottom: 22px; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border-hover); border-radius: var(--radius-lg); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow), var(--shadow-glow); transform: scale(.96) translateY(10px); transition: transform .2s; }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+    .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: all .15s; }
+    .modal-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+    .modal-body { padding: 0 24px; }
+    .modal-footer { padding: 16px 24px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); margin-top: 20px; }
+
+    .post-preview-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 18px; display: none; }
+    .post-preview-box.visible { display: block; animation: fadeUp .2s ease; }
+    .post-preview-box img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+    .preview-info { padding: 12px 14px; }
+    .preview-caption { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .preview-link { font-size: 11px; color: var(--accent-light); text-decoration: none; margin-top: 6px; display: block; }
+    .preview-link:hover { text-decoration: underline; }
+
+    .input-row { display: flex; gap: 8px; }
+    .input-row .form-input { flex: 1; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:600px){ .two-col{grid-template-columns:1fr;} .campaigns-grid{grid-template-columns:1fr;} }
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; box-shadow: var(--shadow); min-width: 250px; max-width: 360px; font-size: 13.5px; animation: slideIn .3s ease forwards; }
+    .toast.success { border-color: rgba(52,211,153,.4); }
+    .toast.error   { border-color: rgba(248,113,113,.4); }
+    .toast-icon { font-size: 15px; flex-shrink: 0; }
+    .toast.success .toast-icon { color: var(--success); }
+    .toast.error   .toast-icon { color: var(--error); }
+    @keyframes slideIn { from{opacity:0;transform:translateX(18px)} to{opacity:1;transform:none} }
+    .toast.removing { animation: slideOut .25s ease forwards; }
+    @keyframes slideOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(18px)} }
+
+    .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .65s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    .skeleton { background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-hover) 50%, var(--bg-secondary) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 8px; }
+    @keyframes shimmer { to{background-position:-200% 0} }
+
+    .modal::-webkit-scrollbar { width: 5px; }
+    .modal::-webkit-scrollbar-track { background: transparent; }
+    .modal::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon-wrap">&#128242;</div>
+      <h1>Comment-to-DM</h1>
+      <p>Instagram Automation Tool</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <div class="nav-item active" id="nav-campaigns" onclick="switchPage('campaigns')">
+        <span class="ni">&#127919;</span> Campaigns
+      </div>
+      <div class="nav-item" id="nav-settings" onclick="switchPage('settings')">
+        <span class="ni">&#9881;</span> Settings
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="status-dot"></span>Server online &middot; Graph API v19.0
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Campaigns</div>
+        <div class="topbar-sub" id="topbar-sub">Manage your automation campaigns</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="page active" id="page-campaigns">
+        <div class="campaigns-header">
+          <h2>Active Campaigns</h2>
+          <button class="btn btn-primary" onclick="openCampaignModal()">&#43; New Campaign</button>
+        </div>
+        <div class="campaigns-grid" id="campaigns-grid">
+          <div class="skeleton" style="height:220px;border-radius:16px;grid-column:1/-1;"></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-settings">
+        <div class="card">
+          <div class="card-title">Instagram API Credentials</div>
+          <div class="card-sub">Connect your Instagram Business account to enable automations.</div>
+          <div class="form-group">
+            <label class="form-label" for="cfg-token">Access Token <span>(stored securely)</span></label>
+            <input type="password" id="cfg-token" class="form-input" placeholder="EAAGxxxxxx&#8230; (long-lived token)" autocomplete="new-password" />
+            <div class="form-hint">Obtain a 60-day long-lived token from Facebook Graph API Explorer. Leave blank to keep existing token.</div>
+          </div>
+          <div class="two-col">
+            <div class="form-group">
+              <label class="form-label" for="cfg-page-id">Facebook Page ID</label>
+              <input type="text" id="cfg-page-id" class="form-input" placeholder="123456789012345" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-account-id">Instagram Business Account ID</label>
+              <input type="text" id="cfg-account-id" class="form-input" placeholder="987654321098765" />
+            </div>
+          </div>
+          <hr class="divider" />
+          <button class="btn btn-primary" id="save-cfg-btn" onclick="saveConfig()">&#128190; Save Settings</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Webhook Configuration</div>
+          <div class="card-sub">Add this callback URL in your Facebook Developer App under Webhooks, and subscribe to the <code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:12px;">comments</code> field.</div>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-family:monospace;font-size:12.5px;color:var(--accent-light);cursor:pointer;" onclick="copyWebhook(this)" title="Click to copy">
+            <span id="webhook-url-display"></span>
+          </div>
+          <div class="form-hint" style="margin-top:10px;">Set <strong>WEBHOOK_VERIFY_TOKEN</strong> in your environment to match the verify token field in Facebook&#39;s webhook setup.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="onOverlayClick(event)">
+  <div class="modal" id="campaign-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">New Campaign</div>
+      <button class="modal-close" onclick="closeCampaignModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modal-id" />
+      <div class="form-group">
+        <label class="form-label" for="modal-post-id">Post ID</label>
+        <div class="input-row">
+          <input type="text" id="modal-post-id" class="form-input" placeholder="17854360229135492" />
+          <button class="btn btn-ghost btn-sm" id="preview-btn" onclick="previewPost()">&#128269; Preview</button>
+        </div>
+        <div class="form-hint">Numeric Instagram Post ID. Use Graph API Explorer to find it.</div>
+      </div>
+      <div class="post-preview-box" id="post-preview-box">
+        <img id="preview-img" src="" alt="Post" style="display:none;" />
+        <div class="preview-info">
+          <div class="preview-caption" id="preview-caption"></div>
+          <a class="preview-link" id="preview-link" href="#" target="_blank" style="display:none;">Open on Instagram &#8599;</a>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="modal-keywords">Trigger Keywords <span>(comma-separated &#8212; leave empty to match ALL comments)</span></label>
+        <input type="text" id="modal-keywords" class="form-input" placeholder="info, price, link, send me" oninput="renderKwChips()" />
+        <div id="kw-chips-preview" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="modal-reply">Comment Reply</label>
+        <textarea id="modal-reply" class="form-textarea" placeholder="Hey! I just sent you a DM with all the details &#127881;"></textarea>
+        <div class="form-hint">Posted publicly as a reply to the matching comment.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="modal-dm">DM Message</label>
+        <textarea id="modal-dm" class="form-textarea" placeholder="Hi! Here&#39;s the link you asked for: https://&#8230;"></textarea>
+        <div class="form-hint">Sent as a private Direct Message to the commenter.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Campaign Status</label>
+        <div style="display:flex;gap:16px;">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="modal-status" id="radio-active" value="true" checked style="accent-color:var(--accent);" />
+            <span style="color:var(--success);">&#9679; Active</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="modal-status" id="radio-inactive" value="false" style="accent-color:var(--accent);" />
+            <span style="color:var(--text-muted);">&#9675; Inactive</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCampaignModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-campaign-btn" onclick="saveCampaign()">&#128190; Save Campaign</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  function toast(msg, type = 'success') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<span class="toast-icon">${type === 'success' ? '&#9989;' : '&#10060;'}</span><span>${escHtml(msg)}</span>`;
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('removing'); setTimeout(() => t.remove(), 300); }, 3800);
+  }
+
+  function setLoading(btn, on, fallback) {
+    if (on) { btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = `<span class="spinner"></span> Loading&#8230;`; }
+    else     { btn.disabled = false; btn.innerHTML = btn._orig || fallback || ''; }
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function copyWebhook(el) {
+    navigator.clipboard.writeText(el.textContent.trim()).then(() => toast('Webhook URL copied!')).catch(() => {});
+  }
+
+  const PAGE_META = {
+    campaigns: { title: 'Campaigns', sub: 'Manage your automation campaigns' },
+    settings:  { title: 'Settings',  sub: 'Configure your Instagram API credentials' },
+  };
+
+  function switchPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`page-${name}`).classList.add('active');
+    document.getElementById(`nav-${name}`).classList.add('active');
+    document.getElementById('topbar-title').textContent = PAGE_META[name].title;
+    document.getElementById('topbar-sub').textContent = PAGE_META[name].sub;
+    if (name === 'settings') loadConfig();
+    if (name === 'campaigns') loadCampaigns();
+  }
+
+  async function loadConfig() {
+    try {
+      const res = await fetch('/api/config');
+      const d = await res.json();
+      if (d.instagram_access_token) document.getElementById('cfg-token').placeholder = d.instagram_access_token;
+      document.getElementById('cfg-page-id').value = d.page_id || '';
+      document.getElementById('cfg-account-id').value = d.instagram_business_account_id || '';
+    } catch(e) { console.warn('loadConfig failed', e); }
+    document.getElementById('webhook-url-display').textContent = `${location.origin}/webhook/instagram`;
+  }
+
+  async function saveConfig() {
+    const btn = document.getElementById('save-cfg-btn');
+    const token = document.getElementById('cfg-token').value.trim();
+    const pageId = document.getElementById('cfg-page-id').value.trim();
+    const accountId = document.getElementById('cfg-account-id').value.trim();
+    setLoading(btn, true);
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ instagram_access_token: token || null, page_id: pageId || null, instagram_business_account_id: accountId || null }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Save failed');
+      toast('Settings saved successfully!');
+      document.getElementById('cfg-token').value = '';
+      loadConfig();
+    } catch(e) { toast(e.message, 'error'); }
+    finally { setLoading(btn, false, '&#128190; Save Settings'); }
+  }
+
+  async function loadCampaigns() {
+    const grid = document.getElementById('campaigns-grid');
+    grid.innerHTML = `<div class="skeleton" style="height:220px;border-radius:16px;grid-column:1/-1;"></div>`;
+    try {
+      const res = await fetch('/api/campaigns');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      renderCampaigns(await res.json());
+    } catch(e) {
+      grid.innerHTML = `<div style="grid-column:1/-1;color:var(--error);font-size:13px;padding:20px;">Failed to load campaigns: ${escHtml(e.message)}</div>`;
+    }
+  }
+
+  function renderCampaigns(list) {
+    const grid = document.getElementById('campaigns-grid');
+    if (!list.length) {
+      grid.innerHTML = `<div class="empty-state"><div class="e-icon">&#127919;</div><h3>No campaigns yet</h3><p>Create your first campaign to start automating Instagram comment replies and DMs.</p><button class="btn btn-primary" onclick="openCampaignModal()">&#43; New Campaign</button></div>`;
+      return;
+    }
+    grid.innerHTML = list.map(c => {
+      const kws = (c.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+      const active = c.is_active;
+      return `<div class="campaign-card fade-in" id="ccard-${c.id}"><div class="campaign-thumb" id="cthumb-${c.id}"><span class="thumb-no-img">&#128444;</span><span style="font-size:11px;">Post ID: ${escHtml(c.post_id)}</span></div><div class="campaign-body"><div class="campaign-meta"><span class="post-id-badge" title="${escHtml(c.post_id)}">${escHtml(c.post_id)}</span><span class="status-badge ${active ? 'status-active' : 'status-inactive'}">${active ? '&#9679; Active' : '&#9675; Paused'}</span></div><div class="kw-row">${kws.length ? kws.map(k => `<span class="kw-chip">${escHtml(k)}</span>`).join('') : '<span class="kw-empty">All comments (no keyword filter)</span>'}</div><div class="msg-previews"><div class="msg-line"><strong>REPLY &nbsp;</strong>${escHtml(c.comment_reply || '&#8212;')}</div><div class="msg-line"><strong>DM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong>${escHtml(c.dm_message || '&#8212;')}</div></div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="editCampaign(${c.id})">&#9999; Edit</button><button class="btn btn-secondary btn-sm" onclick="toggleCampaign(${c.id}, ${active})">${active ? '&#9208; Pause' : '&#9654; Activate'}</button><button class="btn btn-danger btn-sm" onclick="deleteCampaign(${c.id})">&#128465;</button></div></div></div>`;
+    }).join('');
+    list.forEach(c => fetchThumb(c));
+  }
+
+  async function fetchThumb(campaign) {
+    const el = document.getElementById(`cthumb-${campaign.id}`);
+    if (!el) return;
+    try {
+      const res = await fetch(`/api/post-preview/${encodeURIComponent(campaign.post_id)}`);
+      if (!res.ok) return;
+      const d = await res.json();
+      const url = d.media_url || d.thumbnail_url;
+      if (url && el) el.innerHTML = `<img src="${escHtml(url)}" alt="Post" onerror="this.parentElement.innerHTML='<span class=thumb-no-img>&#128444;</span>'" />`;
+    } catch(_) {}
+  }
+
+  async function toggleCampaign(id, currentlyActive) {
+    try {
+      const res = await fetch(`/api/campaigns/${id}/toggle`, {method:'PATCH'});
+      if (!res.ok) throw new Error('Toggle failed');
+      toast(currentlyActive ? 'Campaign paused.' : 'Campaign activated.');
+      loadCampaigns();
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  async function deleteCampaign(id) {
+    if (!confirm('Delete this campaign permanently?')) return;
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {method:'DELETE'});
+      if (!res.ok) throw new Error('Delete failed');
+      toast('Campaign deleted.');
+      loadCampaigns();
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  async function editCampaign(id) {
+    try {
+      const res = await fetch(`/api/campaigns/${id}`);
+      if (!res.ok) throw new Error('Not found');
+      openCampaignModal(await res.json());
+    } catch(e) { toast('Failed to load campaign.', 'error'); }
+  }
+
+  function renderKwChips() {
+    const val = document.getElementById('modal-keywords').value;
+    const kws = val.split(',').map(k => k.trim()).filter(Boolean);
+    document.getElementById('kw-chips-preview').innerHTML = kws.map(k => `<span class="kw-chip">${escHtml(k)}</span>`).join('');
+  }
+
+  function openCampaignModal(c = null) {
+    document.getElementById('modal-id').value = c ? c.id : '';
+    document.getElementById('modal-title').textContent = c ? 'Edit Campaign' : 'New Campaign';
+    document.getElementById('modal-post-id').value = c ? c.post_id : '';
+    document.getElementById('modal-keywords').value = c ? c.keywords : '';
+    document.getElementById('modal-reply').value = c ? c.comment_reply : '';
+    document.getElementById('modal-dm').value = c ? c.dm_message : '';
+    document.getElementById(c && !c.is_active ? 'radio-inactive' : 'radio-active').checked = true;
+    const box = document.getElementById('post-preview-box');
+    box.classList.remove('visible');
+    document.getElementById('preview-img').style.display = 'none';
+    document.getElementById('preview-img').src = '';
+    document.getElementById('preview-caption').textContent = '';
+    document.getElementById('preview-link').style.display = 'none';
+    renderKwChips();
+    document.getElementById('modal-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('modal-post-id').focus(), 80);
+  }
+
+  function closeCampaignModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+  function onOverlayClick(e) { if (e.target === document.getElementById('modal-overlay')) closeCampaignModal(); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCampaignModal(); });
+
+  async function previewPost() {
+    const postId = document.getElementById('modal-post-id').value.trim();
+    if (!postId) { toast('Enter a Post ID first.', 'error'); return; }
+    const btn = document.getElementById('preview-btn');
+    setLoading(btn, true);
+    try {
+      const res = await fetch(`/api/post-preview/${encodeURIComponent(postId)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'API error');
+      const img = document.getElementById('preview-img');
+      const url = data.media_url || data.thumbnail_url;
+      if (url) { img.src = url; img.style.display = 'block'; } else { img.style.display = 'none'; }
+      document.getElementById('preview-caption').textContent = data.caption || '(No caption)';
+      const lnk = document.getElementById('preview-link');
+      if (data.permalink) { lnk.href = data.permalink; lnk.style.display = 'block'; } else { lnk.style.display = 'none'; }
+      document.getElementById('post-preview-box').classList.add('visible');
+    } catch(e) { toast(e.message, 'error'); }
+    finally { setLoading(btn, false, '&#128269; Preview'); }
+  }
+
+  async function saveCampaign() {
+    const id = document.getElementById('modal-id').value;
+    const postId = document.getElementById('modal-post-id').value.trim();
+    const keywords = document.getElementById('modal-keywords').value.trim();
+    const reply = document.getElementById('modal-reply').value.trim();
+    const dm = document.getElementById('modal-dm').value.trim();
+    const isActive = document.getElementById('radio-active').checked;
+    if (!postId) { toast('Post ID is required.', 'error'); return; }
+    if (!reply && !dm) { toast('Provide at least a comment reply or DM message.', 'error'); return; }
+    const btn = document.getElementById('save-campaign-btn');
+    setLoading(btn, true);
+    try {
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/campaigns/${id}` : '/api/campaigns';
+      const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify({ post_id: postId, keywords, comment_reply: reply, dm_message: dm, is_active: isActive }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Save failed');
+      toast(id ? 'Campaign updated!' : 'Campaign created!');
+      closeCampaignModal();
+      loadCampaigns();
+    } catch(e) { toast(e.message, 'error'); }
+    finally { setLoading(btn, false, '&#128190; Save Campaign'); }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadCampaigns();
+    document.getElementById('webhook-url-display').textContent = `${location.origin}/webhook/instagram`;
+  });
+</script>
+</body>
+</html>
